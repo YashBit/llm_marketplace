@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "llm_marketplace_backend": {
+      "candid": "src/llm_marketplace_backend/llm_marketplace_backend.did",
+      "package": "llm_marketplace_backend",
+      "type": "rust"
+    },
+    "llm_marketplace_frontend": {
+      "dependencies": [
+        "llm_marketplace_backend"
+      ],
+      "source": [
+        "src/llm_marketplace_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "llm_marketplace_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
