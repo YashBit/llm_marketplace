@@ -1,27 +1,26 @@
 {
   "canisters": {
-    "llm_marketplace_backend": {
-      "candid": "src/llm_marketplace_backend/llm_marketplace_backend.did",
-      "package": "llm_marketplace_backend",
-      "type": "rust"
+    "hello": {
+      "type": "rust",
+      "candid": "backend/hello/hello.did",
+      "package": "hello",
+      "declarations": {
+        "node_compatibility": true
+      }
     },
-    "llm_marketplace_frontend": {
+    "frontend": {
       "dependencies": [
-        "llm_marketplace_backend"
+        "hello"
       ],
+      "frontend": {
+        "entrypoint": "out/index.html"
+      },
       "source": [
-        "src/llm_marketplace_frontend/dist"
+        "out"
       ],
-      "type": "assets",
-      "workspace": "llm_marketplace_frontend"
+      "type": "assets"
     }
   },
-  "defaults": {
-    "build": {
-      "args": "",
-      "packtool": ""
-    }
-  },
-  "output_env_file": ".env",
+  "output_env_file": ".env.local",
   "version": 1
 }
