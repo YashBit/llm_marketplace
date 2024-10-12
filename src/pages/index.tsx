@@ -4,6 +4,7 @@ import styles from "styles/Home.module.css"
 
 import Greeting from "components/Greeting"
 import Image from "next/image"
+import InternetIdentityLogin from "components/InternetIdentityLogin"
 
 function HomePage() {
   return (
@@ -16,6 +17,7 @@ function HomePage() {
           Welcome to the Internet Computer starter template
         </h3>
         <Greeting />
+        <InternetIdentityLogin  />
       </main>
       <footer className={styles.footer}>
         <a

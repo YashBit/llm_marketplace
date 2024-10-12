@@ -1,38 +1,63 @@
-// index.ts
-import { Actor, HttpAgent } from "@dfinity/agent";
+import { Actor, HttpAgent, ActorMethod } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
-import idlFactory from "./did";
-import type { _SERVICE } from "./did";
-import { renderIndex } from "./views";
-import { renderLoggedIn } from "./views/loggedIn";
+import { IDL } from "@dfinity/candid";
+import type { Principal } from "@dfinity/principal";
 
-const init = async () => {
-  const authClient = await AuthClient.create();
-  if (await authClient.isAuthenticated()) {
-    handleAuthenticated(authClient);
-  }
-  renderIndex();
+const whoamiCanisterId = process.env.NEXT_PUBLIC_WHOAMI_CANISTER_ID;
 
-  const loginButton = document.getElementById(
-    "loginButton"
-  ) as HTMLButtonElement;
-  loginButton.onclick = async () => {
-    await authClient.login({
-      onSuccess: async () => {
-        handleAuthenticated(authClient);
-      },
-    });
-  };
+// Define the interface for the whoami canister
+interface WhoamiService {
+  whoami: () => Promise<Principal>;
+}
+
+// Define the IDL factory using a type assertion
+const whoamiIdlFactory = () => {
+  return IDL.Service({ whoami: IDL.Func([], [IDL.Principal], ["query"]) });
 };
 
-async function handleAuthenticated(authClient: AuthClient) {
-  const identity = await authClient.getIdentity();
+export const getInternetIdentityUrl = () => {
+  if (process.env.NEXT_PUBLIC_DFX_NETWORK === "ic") {
+    return `https://${process.env.NEXT_PUBLIC_INTERNET_IDENTITY_CANISTER_ID}.ic0.app`;
+  } else {
+    return `http://${process.env.NEXT_PUBLIC_INTERNET_IDENTITY_CANISTER_ID}.localhost:4943`;
+  }
+};
 
-  const agent = new HttpAgent({ identity });
-  console.log(process.env.CANISTER_ID);
-  const whoami_actor = Actor.createActor<_SERVICE>(idlFactory, {
-    agent,
-    canisterId: process.env.CANISTER_ID as string,
+export const login = async(): Promise<string> => {
+  const authClient = await AuthClient.create();
+  const iiUrl = getInternetIdentityUrl();
+
+  await new Promise<void>((resolve, reject) => {
+    authClient.login({
+      identityProvider: iiUrl,
+      onSuccess: resolve,
+      onError: reject,
+    });
   });
-  renderLoggedIn(whoami_actor, authClient);
-}
+
+  const identity = authClient.getIdentity();
+  const agent = new HttpAgent({ identity });
+
+  if (process.env.NEXT_PUBLIC_DFX_NETWORK !== "ic") {
+    await agent.fetchRootKey();
+  }
+
+  const whoamiActor = Actor.createActor<WhoamiService>(whoamiIdlFactory, {
+    agent,
+    canisterId: whoamiCanisterId!,
+  });
+
+  const principal = await whoamiActor.whoami();
+  return principal.toText();
+};
+
+// Example usage
+document.getElementById("loginBtn")?.addEventListener("click", async () => {
+  try {
+    const principalId = await login();
+    document.getElementById("loginStatus")!.innerText = principalId;
+  } catch (error) {
+    console.error("Login failed:", error);
+    document.getElementById("loginStatus")!.innerText = "Login failed";
+  }
+});
