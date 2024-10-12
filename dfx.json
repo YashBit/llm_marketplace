@@ -1,27 +1,39 @@
 {
   "canisters": {
-    "llm_marketplace_backend": {
-      "candid": "src/llm_marketplace_backend/llm_marketplace_backend.did",
-      "package": "llm_marketplace_backend",
-      "type": "rust"
+    "internet_identity": {
+      "__0": "The development build of Internet Identity. For more information, see https://github.com/dfinity/internet-identity#build-features-and-flavors",
+      "type": "custom",
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz",
+
+      "__2": "The remote block indicates that this canister is only used locally and should not be deployed on the IC.",
+      "remote": {
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      }
     },
-    "llm_marketplace_frontend": {
+    "hello": {
+      "type": "rust",
+      "candid": "backend/hello/hello.did",
+      "package": "hello",
+      "declarations": {
+        "node_compatibility": true
+      }
+    },
+    "frontend": {
       "dependencies": [
-        "llm_marketplace_backend"
+        "hello"
       ],
+      "frontend": {
+        "entrypoint": "out/index.html"
+      },
       "source": [
-        "src/llm_marketplace_frontend/dist"
+        "out"
       ],
-      "type": "assets",
-      "workspace": "llm_marketplace_frontend"
+      "type": "assets"
     }
   },
-  "defaults": {
-    "build": {
-      "args": "",
-      "packtool": ""
-    }
-  },
-  "output_env_file": ".env",
+  "output_env_file": ".env.local",
   "version": 1
 }
