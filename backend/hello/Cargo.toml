@@ -11,3 +11,5 @@ crate-type = ["cdylib"]
 [dependencies]
 candid = "*"
 ic-cdk = "*"
+ic-stable-memory = "0.4"
+
