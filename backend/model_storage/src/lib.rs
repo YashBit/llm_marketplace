@@ -5,8 +5,10 @@ use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::borrow::Cow;
 use candid::candid_method;
+mod memory;
+use memory::Memory;
 
-type Memory = VirtualMemory<DefaultMemoryImpl>;
+type VMemory = VirtualMemory<DefaultMemoryImpl>;
 
 #[derive(Serialize, Deserialize, Clone)]
 struct ModelData {
@@ -33,15 +35,15 @@ impl Storable for ModelData {
 #[derive(Serialize, Deserialize)]
 struct State {
     #[serde(skip, default = "init_stable_data")]
-    model_data: StableBTreeMap<String, ModelData, Memory>,
+    model_data: StableBTreeMap<String, ModelData, VMemory>,
 }
 
 thread_local! {
     static STATE: RefCell<State> = RefCell::new(State::default());
 }
 
-fn init_stable_data() -> StableBTreeMap<String, ModelData, Memory> {
-    StableBTreeMap::init(crate::Memory::get_stable_btree_memory())
+fn init_stable_data() -> StableBTreeMap<String, ModelData, VMemory> {
+    StableBTreeMap::init(crate::memory::get_stable_btree_memory())
 }
 
 impl Default for State {
@@ -105,7 +107,7 @@ fn delete_model(name: String) -> Result<(), String> {
 
 
 
-candid::export_service! {
+candid::export_service!{
     init;
     store_model: (String, Vec<u8>, String) -> (Result<(), String>);
     get_model_names: () -> (Vec<String>) query;
@@ -137,4 +139,3 @@ mod tests {
         println!("Contents of model_storage.did:\n{}", did_contents);
     }
 }
-

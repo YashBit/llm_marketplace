@@ -7,12 +7,9 @@ edition = "2018"
 crate-type = ["cdylib"]
 
 [dependencies]
-candid = "0.8"
 ic-cdk = "0.11"
 ic-cdk-macros = "0.6"
 ic-stable-structures = { git = "https://github.com/dfinity/stable-structures.git" }
 serde = "1.0.132"
 serde_cbor = "0.11"
-
-[dev-dependencies]
 candid = "0.8"
