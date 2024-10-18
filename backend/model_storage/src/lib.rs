@@ -1,116 +1,111 @@
-use candid::{CandidType, Deserialize};
-use ic_cdk_macros::*;
-use ic_stable_memory::collections::SVec;
-use ic_stable_memory::derive::{CandidAsDynSizeBytes, StableType};
-use ic_stable_memory::{stable_memory_init, SBox};
+use ic_cdk_macros::{post_upgrade, pre_upgrade, query, update};
+use ic_stable_structures::{memory_manager::{MemoryId, MemoryManager, VirtualMemory}, DefaultMemoryImpl, StableBTreeMap};
+use ic_stable_structures::storable::{Storable, Bound};
+use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
+use std::borrow::Cow;
 use candid::candid_method;
 
+type Memory = VirtualMemory<DefaultMemoryImpl>;
 
-#[derive(CandidType, Deserialize, StableType, CandidAsDynSizeBytes, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone)]
 struct ModelData {
     name: String,
     weights: Vec<u8>,
     config: String,
 }
 
-type ModelStorage = SVec<SBox<ModelData>>;
+impl Storable for ModelData {
+    const BOUND: Bound = Bound::Bounded {
+        max_size: 1024, // Adjust based on your model's expected size
+        is_fixed_size: false,
+    };
+
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(serde_cbor::to_vec(self).unwrap())
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        serde_cbor::from_slice(&bytes).unwrap()
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct State {
+    #[serde(skip, default = "init_stable_data")]
+    model_data: StableBTreeMap<String, ModelData, Memory>,
+}
 
 thread_local! {
-    static MODEL_STORAGE: RefCell<Option<ModelStorage>> = RefCell::default();
+    static STATE: RefCell<State> = RefCell::new(State::default());
 }
 
-#[candid_method(init)]
-#[ic_cdk_macros::init]
-fn init() {
-    stable_memory_init();
-    MODEL_STORAGE.with(|storage| {
-        *storage.borrow_mut() = Some(SVec::new());
-    });
+fn init_stable_data() -> StableBTreeMap<String, ModelData, Memory> {
+    StableBTreeMap::init(crate::Memory::get_stable_btree_memory())
 }
 
-#[candid_method(update)]
-#[ic_cdk_macros::update]
-pub fn store_model(name: String, weights: Vec<u8>, config: String) -> Result<(), String> {
-    let model_data = ModelData {
-        name: name.clone(),
-        weights,
-        config,
-    };
-    MODEL_STORAGE.with(|storage| {
-        let mut storage = storage.borrow_mut();
-        let storage = storage.as_mut().unwrap();
-        // Check if a model with the same name already exists
-        if storage.iter().any(|model| model.name == name) {
-            return Err("A model with this name already exists".to_string());
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            model_data: init_stable_data(),
         }
-        let boxed_model = SBox::new(model_data).map_err(|e| format!("Failed to create SBox: {:?}", e))?;
-        storage.push(boxed_model).map_err(|e| format!("Failed to store model: {:?}", e))?;
-        Ok(())
-    })
+    }
 }
 
+#[update]
+#[candid_method(update)]
+fn store_model(name: String, weights: Vec<u8>, config: String) -> Result<(), String> {
+    let model = ModelData { name: name.clone(), weights, config };
+    STATE.with(|s| s.borrow_mut().model_data.insert(name, model));
+    Ok(())
+}
+
+#[query]
 #[candid_method(query)]
-#[ic_cdk_macros::query]
-pub fn get_model_names() -> Vec<String> {
-    MODEL_STORAGE.with(|storage| {
-        storage
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .iter()
-            .map(|model| model.name.clone())
+fn get_model_names() -> Vec<String> {
+    STATE.with(|s| {
+        s.borrow().model_data.iter()
+            .map(|(key, _)| key.clone())
             .collect()
     })
 }
-
+#[query]
 #[candid_method(query)]
-#[ic_cdk_macros::query]
-pub fn get_model_config(name: String) -> Result<String, String> {
-    MODEL_STORAGE.with(|storage| {
-        storage
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .iter()
-            .find(|model| model.name == name)
-            .map(|model| model.config.clone())
-            .ok_or_else(|| "Model not found".to_string())
+fn get_model_config(name: String) -> Result<String, String> {
+    STATE.with(|s| {
+        match s.borrow().model_data.get(&name) {
+            Some(model) => Ok(model.config.clone()),
+            None => Err("Model not found".to_string()),
+        }
     })
 }
 
+#[query]
+#[candid_method(query)]
+fn get_model_weights(name: String) -> Result<Vec<u8>, String> {
+    STATE.with(|s| {
+        match s.borrow().model_data.get(&name) {
+            Some(model) => Ok(model.weights.clone()),
+            None => Err("Model not found".to_string()),
+        }
+    })
+}
+
+#[update]
 #[candid_method(update)]
-#[ic_cdk_macros::update]
-pub fn get_model_weights(name: String) -> Result<Vec<u8>, String> {
-    MODEL_STORAGE.with(|storage| {
-        storage
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .iter()
-            .find(|model| model.name == name)
-            .map(|model| model.weights.clone())
-            .ok_or_else(|| "Model not found".to_string())
+fn delete_model(name: String) -> Result<(), String> {
+    STATE.with(|s| {
+        if s.borrow_mut().model_data.remove(&name).is_some() {
+            Ok(())
+        } else {
+            Err("Model not found".to_string())
+        }
     })
 }
 
-#[candid_method(update)]
-#[ic_cdk_macros::update]
-pub fn delete_model(name: String) -> Result<(), String> {
-    MODEL_STORAGE.with(|storage| {
-        let mut storage = storage.borrow_mut();
-        let storage = storage.as_mut().unwrap();
-        let index = storage
-            .iter()
-            .position(|model| model.name == name)
-            .ok_or_else(|| "Model not found".to_string())?;
-        storage.remove(index);
-        Ok(())
-    })
-}
 
-// Manually define Candid service
-candid::export_service!{
+
+candid::export_service! {
     init;
     store_model: (String, Vec<u8>, String) -> (Result<(), String>);
     get_model_names: () -> (Vec<String>) query;
@@ -142,3 +137,4 @@ mod tests {
         println!("Contents of model_storage.did:\n{}", did_contents);
     }
 }
+

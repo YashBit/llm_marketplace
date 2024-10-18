@@ -13,17 +13,17 @@
         }
       }
     },
-    "hello": {
+    "model_storage": {
       "type": "rust",
-      "candid": "backend/hello/hello.did",
-      "package": "hello",
+      "candid": "backend/model_storage/model_storage.did",
+      "package": "model_storage",
       "declarations": {
         "node_compatibility": true
       }
     },
     "frontend": {
       "dependencies": [
-        "hello"
+        "model_storage"
       ],
       "frontend": {
         "entrypoint": "out/index.html"
