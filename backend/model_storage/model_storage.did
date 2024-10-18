@@ -1,0 +1,10 @@
+type Result = variant { Ok; Err : text };
+type Result_1 = variant { Ok : text; Err : text };
+type Result_2 = variant { Ok : vec nat8; Err : text };
+service : {
+  delete_model : (text) -> (Result);
+  get_model_config : (text) -> (Result_1) query;
+  get_model_names : () -> (vec text) query;
+  get_model_weights : (text) -> (Result_2) query;
+  store_model : (text, vec nat8, text) -> (Result);
+}

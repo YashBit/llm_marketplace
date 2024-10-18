@@ -17,17 +17,20 @@
     "ic-wasm:install": "cargo install ic-wasm",
     "build": "next build",
     "start": "next start",
-    "export": "next build",
+    "export": "next build && next export",
     "dev": "next dev",
-    "deploy": "dfx deploy",
+    "deploy:all": "npm run export && dfx deploy",
     "dfx:stop": "dfx stop",
     "dfx:pull": "dfx deps pull && dfx deps init",
     "dfx:start": "dfx start --background --clean",
     "dfx:build": "sh ./predeploy.sh && dfx build",
     "dfx:identity": "dfx deps deploy internet_identity",
-    "dfx:generate": "dfx generate"
+    "dfx:generate": "dfx generate",
+    "generate:did": "cd backend/model_storage && cargo test --lib generate_candid -- --nocapture"
   },
+
   "dependencies": {
+    "@dfinity/agent": "^0.15.1",
     "@ic-reactor/react": "^1.2",
     "next": "^14.2.5",
     "react": "^18.3.1",

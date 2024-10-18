@@ -1,0 +1,15 @@
+[package]
+name = "model_storage"
+version = "0.2.0"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ic-cdk = "0.11"
+ic-cdk-macros = "0.6"
+ic-stable-structures = { git = "https://github.com/dfinity/stable-structures.git" }
+serde = "1.0.132"
+serde_cbor = "0.11"
+candid = "0.8"
