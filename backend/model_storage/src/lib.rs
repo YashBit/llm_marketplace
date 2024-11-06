@@ -17,6 +17,8 @@ struct ModelData {
     config: String,
 }
 
+// Structs need an impl 
+
 impl Storable for ModelData {
     const BOUND: Bound = Bound::Bounded {
         max_size: 1024, // Adjust based on your model's expected size
@@ -41,6 +43,7 @@ struct State {
 thread_local! {
     static STATE: RefCell<State> = RefCell::new(State::default());
 }
+
 
 fn init_stable_data() -> StableBTreeMap<String, ModelData, VMemory> {
     StableBTreeMap::init(crate::memory::get_stable_btree_memory())
