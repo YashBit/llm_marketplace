@@ -22,21 +22,23 @@ import {
     Loader2
 } from 'lucide-react';
 import { Alert, AlertDescription } from "../components/ui/alert";
+import { idlFactory } from '../declarations/model_storage/model_storage.did.js';
+
 
 import type { _SERVICE as ModelStorageService } from '../declarations/model_storage/model_storage.did';
 
 
 const LLMMarketplaceDashboard = () => {
-    // Authentication State
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [principal, setPrincipal] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [principal, setPrincipal] = useState<string | null>(null);
 
-    // Model States
-    const [modelNames, setModelNames] = useState<string[]>([]);
-    const [selectedModel, setSelectedModel] = useState<string>("");
-    const [uploadFile, setUploadFile] = useState<File | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+  // Model States
+  const [modelNames, setModelNames] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>("");
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
     
 
     // TODO: Change with real stats 
@@ -49,7 +51,7 @@ const LLMMarketplaceDashboard = () => {
 
 
     const initActor = async () => {
-      try{
+      try {
         const agent = new HttpAgent({
           host: process.env.NEXT_PUBLIC_IC_HOST || 'http://localhost:4943', 
         });
@@ -59,9 +61,10 @@ const LLMMarketplaceDashboard = () => {
         }
 
         const actor = Actor.createActor<ModelStorageService>(
-          process.env.NEXT_PUBLIC_MODEL_STORAGE_CANISTER_ID!,
+          idlFactory,
           {
             agent,
+            canisterId: process.env.NEXT_PUBLIC_MODEL_STORAGE_CANISTER_ID!,
           }
         );
   
@@ -72,31 +75,13 @@ const LLMMarketplaceDashboard = () => {
       }
     };
 
-    const fetchModelNames = async () => {
-      try{
-        const actor = await initActor();
-        const names = await actor.get_model_names();
-        setModelNames(names);
-        setError(null);
-      } catch (err) {
-        setError('Failed to fetch model names');
-        console.error(err);
-      }
-    };
-
-    useEffect(() => {
-      fetchModelNames();
-    }, []);
-
-
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
           setUploadFile(file);
           setError(null);
         }
-      }
-    };
+    }; // Removed extra closing brace here
 
     const handleUpload = async () => {
       if (!uploadFile) return;
@@ -131,7 +116,7 @@ const LLMMarketplaceDashboard = () => {
         setLoading(false);
       }
     };
-  
+
     const handleDownload = async (modelName: string) => {
       try {
         setLoading(true);
@@ -159,6 +144,23 @@ const LLMMarketplaceDashboard = () => {
         setLoading(false);
       }
     };
+
+
+    const fetchModelNames = async () => {
+      try{
+        const actor = await initActor();
+        const names = await actor.get_model_names();
+        setModelNames(names);
+        setError(null);
+      } catch (err) {
+        setError('Failed to fetch model names');
+        console.error(err);
+      }
+    };
+
+    useEffect(() => {
+      fetchModelNames();
+    }, []);
   
   
     return (
