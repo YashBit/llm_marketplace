@@ -30,7 +30,7 @@
     "setup:ii": "dfx deploy internet_identity --network local --no-wallet"
   },
   "dependencies": {
-    "@dfinity/agent": "^0.15.1",
+    "@dfinity/auth-client": "^2.1.3",
     "@ic-reactor/react": "^1.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-select": "^2.1.2",

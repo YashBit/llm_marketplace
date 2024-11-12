@@ -23,6 +23,6 @@
       "*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "src/**/*"],
+  "include": ["next-env.d.ts", "src/**/*", "src/components/secondDashboard.tsx"],
   "exclude": ["node_modules", "out"]
 }

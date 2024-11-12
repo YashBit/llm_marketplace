@@ -1,86 +1,95 @@
 import React, { useState } from 'react';
-
-type IdentityType = 'email' | 'phone';
+import { AuthClient } from '@dfinity/auth-client';
+import { useRouter } from 'next/router';
 
 const InternetIdentityLogin: React.FC = () => {
   const [loginStatus, setLoginStatus] = useState<string>("Not logged in");
-  const [iiUrl, setIiUrl] = useState<string>("https://identity.ic0.app");
-  const [identity, setIdentity] = useState<string>("");
-  const [identityType, setIdentityType] = useState<IdentityType>('email');
-  const [principal, setPrincipal] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = async () => {
     try {
-      // Simulate login process
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setLoading(true);
+      setLoginStatus("Connecting to Internet Identity...");
       
-      if (!identity) {
-        throw new Error("Identity is required");
-      }
+      const authClient = await AuthClient.create();
+      
+      const handleAuthenticated = async () => {
+        const identity = authClient.getIdentity();
+        const principal = identity.getPrincipal().toString();
+        console.log("Authentication successful. Principal:", principal);
+        setLoginStatus(`Logged in with principal: ${principal}`);
+        router.push('/dashboard');
+      };
 
-      // Simulate generating a principal after successful authentication
-      const mockPrincipal = 'w3gps-vyaaa-aaaaa-aaaan-cai';
-      setPrincipal(mockPrincipal);
-      
-      setLoginStatus(`Logged in successfully with ${identityType}: ${identity}`);
-    } catch (error) {
-      console.error("Login failed:", error);
-      setLoginStatus(`Login failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setPrincipal(null);
+      await new Promise((resolve, reject) => {
+        authClient.login({
+          identityProvider: process.env.NEXT_PUBLIC_II_URL || 'https://identity.ic0.app',
+          maxTimeToLive: BigInt(7 * 24 * 60 * 60 * 1000 * 1000 * 1000), // 7 days in nanoseconds
+          onSuccess: () => {
+            handleAuthenticated();
+            resolve(true);
+          },
+          onError: (error) => {
+            console.error("Login failed:", error);
+            setLoginStatus(`Login failed: ${error}`);
+            reject(new Error(typeof error === 'string' ? error : 'Login failed'));
+          },
+        });
+      });
+
+    } catch (err) {
+      console.error("Login failed:", err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setLoginStatus(`Login failed: ${errorMessage}`);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <main className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Internet Identity Demo Webapp</h1>
-      <section className="mb-4">
-        <label htmlFor="iiUrl" className="block mb-2">Internet Identity URL:</label>
-        <input
-          className="w-full p-2 border rounded"
-          id="iiUrl"
-          type="text"
-          value={iiUrl}
-          onChange={(e) => setIiUrl(e.target.value)}
-        />
-      </section>
-      <section className="mb-4">
-        <label htmlFor="identityType" className="block mb-2">Identity Type:</label>
-        <select
-          className="w-full p-2 border rounded"
-          id="identityType"
-          value={identityType}
-          onChange={(e) => setIdentityType(e.target.value as IdentityType)}
-        >
-          <option value="email">Email</option>
-          <option value="phone">Phone</option>
-        </select>
-      </section>
-      <section className="mb-4">
-        <label htmlFor="identity" className="block mb-2">Identity:</label>
-        <input
-          className="w-full p-2 border rounded"
-          id="identity"
-          type="text"
-          value={identity}
-          onChange={(e) => setIdentity(e.target.value)}
-          placeholder={identityType === 'email' ? 'user@example.com' : '+1234567890'}
-        />
-      </section>
-      <section className="mb-4">
-        <button 
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          onClick={handleLogin}
-        >
-          Login with Internet Identity
-        </button>
-      </section>
-      <section>
-        <p className="text-lg">{loginStatus}</p>
-        {principal && (
-          <p className="text-lg mt-2">Your principal: {principal}</p>
-        )}
-      </section>
-    </main>
+    <div className="flex flex-col items-center justify-center min-h-screen py-2">
+      <main className="flex flex-col items-center justify-center w-full flex-1 px-20 text-center">
+        <h1 className="text-4xl font-bold mb-8">
+          Welcome to LLM Marketplace
+        </h1>
+        
+        <div className="flex flex-col items-center space-y-4">
+          <button 
+            className={`
+              px-6 py-3 rounded-lg text-white font-semibold
+              ${loading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700'}
+            `}
+            onClick={handleLogin}
+            disabled={loading}
+          >
+            {loading ? 'Connecting...' : 'Login with Internet Identity'}
+          </button>
+          
+          {loginStatus && (
+            <p className="mt-4 text-gray-600">
+              {loginStatus}
+            </p>
+          )}
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-sm text-gray-500">
+            Don&apos;t have an Internet Identity?{' '}
+            <a 
+              href="https://identity.ic0.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              Create one here
+            </a>
+          </p>
+        </div>
+      </main>
+    </div>
   );
 };
 

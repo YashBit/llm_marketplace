@@ -1,41 +1,29 @@
-import Head from "next/head"
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
+import styles from "styles/Home.module.css";
+import InternetIdentityLogin from "components/InternetIdentityLogin";
+import { AuthClient } from '@dfinity/auth-client';
 
-import styles from "styles/Home.module.css"
+export default function HomePage() {
+  const router = useRouter();
 
-import Greeting from "components/Greeting"
-import Image from "next/image"
-import InternetIdentityLogin from "components/InternetIdentityLogin"
+  useEffect(() => {
+    const checkAuth = async () => {
+      const authClient = await AuthClient.create();
+      const isAuthenticated = await authClient.isAuthenticated();
+      
+      if (isAuthenticated) {
+        console.log("User is already authenticated, redirecting to dashboard...");
+        router.push('/dashboard');
+      }
+    };
 
-function HomePage() {
+    checkAuth();
+  }, [router]);
+
   return (
     <div className={styles.container}>
-      <Head>
-        <title>Internet Computer</title>
-      </Head>
-      <main className={styles.main}>
-        <h3 className={styles.title}>
-          Welcome to the Internet Computer starter template
-        </h3>
-        <Greeting />
-        <InternetIdentityLogin  />
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://internetcomputer.org/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            width={140}
-            height={30}
-            src="/icp-logo.svg"
-            alt="DFINITY logo"
-            className={styles.logo}
-          />
-        </a>
-      </footer>
+      <InternetIdentityLogin />
     </div>
-  )
+  );
 }
-
-export default HomePage
