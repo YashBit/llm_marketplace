@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import styles from "styles/Home.module.css";
-import InternetIdentityLogin from "components/InternetIdentityLogin";
+import styles from "../styles/Home.module.css";
+import InternetIdentityLogin from "../components/InternetIdentityLogin";
 import { AuthClient } from '@dfinity/auth-client';
 
 export default function HomePage() {

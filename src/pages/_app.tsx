@@ -2,7 +2,7 @@ import { AppProps } from "next/app";
 import React, { useEffect, useState } from "react";
 import { AuthClient } from '@dfinity/auth-client';
 import { useRouter } from 'next/router';
-import "styles/global.css";
+import "../styles/global.css";
 
 const App: React.FC<AppProps> = ({ Component, pageProps }) => {
   const [authClient, setAuthClient] = useState<AuthClient | null>(null);
