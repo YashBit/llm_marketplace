@@ -13,10 +13,11 @@
     },
     "model_storage": {
       "type": "rust",
-      "candid": "backend/model_storage/model_storage.did",
+      "candid": "backend/model_storage/model_storage.did", 
       "package": "model_storage",
       "declarations": {
-        "node_compatibility": true
+        "node_compatibility": true,
+        "output": "src/declarations"
       }
     },
     "frontend": {
