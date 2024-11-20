@@ -25,6 +25,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { idlFactory } from '../declarations/model_storage/model_storage.did.js';
 import type { _SERVICE as ModelStorageService } from '../declarations/model_storage/model_storage.did';
 import { Principal } from '@dfinity/principal';
+import { AnonymousIdentity } from '@dfinity/agent';
+
 
 interface LLMMarketplaceDashboardProps {
   authClient: any;
@@ -55,7 +57,6 @@ const LLMMarketplaceDashboard: React.FC<LLMMarketplaceDashboardProps> = ({
 
   const initActor = useCallback(async () => {
     try {
-      const dfxPrincipal = Principal.fromText("kjtnb-vg5m7-zzbdk-v44p2-m6q3l-vqqhp-kxwhm-ji6ue-jadvn-bflay-tae");
       const host = process.env.NEXT_PUBLIC_IC_HOST;
       const canisterId = process.env.NEXT_PUBLIC_MODEL_STORAGE_CANISTER_ID;
   
@@ -63,85 +64,41 @@ const LLMMarketplaceDashboard: React.FC<LLMMarketplaceDashboardProps> = ({
         throw new Error('Missing environment variables');
       }
   
-      console.log('Initializing actor with dfx principal:', dfxPrincipal.toString());
+      // Use AnonymousIdentity
+      const anonymousIdentity = new AnonymousIdentity();
+      console.log('Using anonymous identity:', anonymousIdentity.getPrincipal().toString());
   
       const agent = new HttpAgent({
         host,
-        identity: {
-          getPrincipal: () => dfxPrincipal,
-          transformRequest: async (request: any) => {
-            // Create a base request structure
-            const baseRequest = {
-              ...request,
-              sender: dfxPrincipal,
-              ingress_expiry: new Date().getTime() + 5 * 60 * 1000, // 5 minutes from now
-            };
-  
-            // If it's a query request
-            if (request.methodName === 'query') {
-              return {
-                ...baseRequest,
-                body: {
-                  request_type: "query",
-                  canister_id: request.canisterId,
-                  method_name: request.methodName,
-                  arg: request.arg || new Uint8Array(),
-                  sender: dfxPrincipal.toUint8Array(),
-                  ingress_expiry: BigInt(baseRequest.ingress_expiry)
-                }
-              };
-            }
-  
-            // If it's a call request
-            return {
-              ...baseRequest,
-              body: {
-                request_type: "call",
-                canister_id: request.canisterId,
-                method_name: request.methodName,
-                arg: request.arg || new Uint8Array(),
-                sender: dfxPrincipal.toUint8Array()
-              }
-            };
-          }
-        }
+        identity: anonymousIdentity
       });
   
       if (process.env.NEXT_PUBLIC_DFX_NETWORK !== 'ic') {
-        await agent.fetchRootKey().catch(e => {
-          console.error('Failed to fetch root key:', e);
-          throw new Error('Failed to fetch root key. Is the local replica running?');
-        });
+        await agent.fetchRootKey();
       }
   
       const canisterPrincipal = Principal.fromText(canisterId);
   
-      const actor = Actor.createActor<ModelStorageService>(
+      // Log the request being made
+      console.log('Creating actor:', {
+        host,
+        canisterId: canisterPrincipal.toString(),
+        identity: 'anonymous'
+      });
+  
+      return Actor.createActor<ModelStorageService>(
         idlFactory,
         {
           agent,
-          canisterId: canisterPrincipal,
-          effectiveCanisterId: canisterPrincipal
+          canisterId: canisterPrincipal
         }
       );
-  
-      // Test the connection with better error handling
-      try {
-        console.log('Testing actor connection...');
-        const result = await actor.get_model_names();
-        console.log('Connection test successful:', result);
-      } catch (e) {
-        console.error('Actor test failed with detailed error:', {
-          error: e,
-          message: e instanceof Error ? e.message : 'Unknown error',
-          stack: e instanceof Error ? e.stack : undefined
-        });
-        throw e;
-      }
-  
-      return actor;
     } catch (err) {
-      console.error('Actor initialization failed:', err);
+      console.error('Actor initialization failed:', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
+      });
       throw err;
     }
   }, []);
@@ -298,11 +255,11 @@ const LLMMarketplaceDashboard: React.FC<LLMMarketplaceDashboardProps> = ({
     try {
       console.log('Fetching model names...');
       const actor = await initActor();
-
-      // Explicitly handle the CBOR response
+      
+      console.log('Actor created, making query...');
       const response = await actor.get_model_names();
+      
       console.log('Raw response:', response);
-
       setModelNames(response);
       setError(null);
     } catch (err) {
