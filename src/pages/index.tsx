@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import styles from "../styles/Home.module.css";
-import InternetIdentityLogin from "../components/InternetIdentityLogin";
+import styles from '../styles/Home.module.css';
+import InternetIdentityLogin from '../components/InternetIdentityLogin';
 import { AuthClient } from '@dfinity/auth-client';
 
 export default function HomePage() {
@@ -11,9 +11,9 @@ export default function HomePage() {
     const checkAuth = async () => {
       const authClient = await AuthClient.create();
       const isAuthenticated = await authClient.isAuthenticated();
-      
+
       if (isAuthenticated) {
-        console.log("User is already authenticated, redirecting to dashboard...");
+        console.log('User is already authenticated, redirecting to dashboard...');
         router.push('/dashboard');
       }
     };

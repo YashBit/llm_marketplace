@@ -21,20 +21,20 @@ const DashboardPage = () => {
       try {
         const client = await AuthClient.create();
         setAuthClient(client);
-        
+
         const isAuth = await client.isAuthenticated();
-        console.log("Dashboard auth check:", isAuth);
-        
+        console.log('Dashboard auth check:', isAuth);
+
         if (!isAuth) {
-          console.log("User not authenticated, redirecting to login...");
+          console.log('User not authenticated, redirecting to login...');
           router.push('/');
           return;
         }
-        
+
         setIsAuthenticated(true);
         setIdentity(client.getIdentity());
       } catch (error) {
-        console.error("Auth check failed:", error);
+        console.error('Auth check failed:', error);
         router.push('/');
       }
     };
