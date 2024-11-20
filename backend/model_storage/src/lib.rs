@@ -1,4 +1,4 @@
-use ic_cdk_macros::{post_upgrade, pre_upgrade, query, update};
+use ic_cdk_macros::{init, post_upgrade, pre_upgrade, query, update};
 use ic_stable_structures::{memory_manager::{MemoryId, MemoryManager, VirtualMemory}, DefaultMemoryImpl, StableBTreeMap};
 use ic_stable_structures::storable::{Storable, Bound};
 use serde::{Deserialize, Serialize};
@@ -10,6 +10,11 @@ use memory::Memory;
 
 type VMemory = VirtualMemory<DefaultMemoryImpl>;
 
+#[init]
+fn init() {
+    ic_cdk::setup();
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 struct ModelData {
     name: String,
@@ -17,9 +22,11 @@ struct ModelData {
     config: String,
 }
 
+// Structs need an impl 
+
 impl Storable for ModelData {
     const BOUND: Bound = Bound::Bounded {
-        max_size: 1024, // Adjust based on your model's expected size
+        max_size: 1024 * 1024 * 50, // Adjust based on your model's expected size
         is_fixed_size: false,
     };
 
@@ -41,6 +48,7 @@ struct State {
 thread_local! {
     static STATE: RefCell<State> = RefCell::new(State::default());
 }
+
 
 fn init_stable_data() -> StableBTreeMap<String, ModelData, VMemory> {
     StableBTreeMap::init(crate::memory::get_stable_btree_memory())

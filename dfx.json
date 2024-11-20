@@ -1,39 +1,66 @@
 {
   "canisters": {
     "internet_identity": {
-      "__0": "The development build of Internet Identity. For more information, see https://github.com/dfinity/internet-identity#build-features-and-flavors",
       "type": "custom",
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
-      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz",
-
-      "__2": "The remote block indicates that this canister is only used locally and should not be deployed on the IC.",
-      "remote": {
-        "id": {
-          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
-        }
-      }
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
     },
     "model_storage": {
       "type": "rust",
       "candid": "backend/model_storage/model_storage.did",
       "package": "model_storage",
       "declarations": {
-        "node_compatibility": true
+        "node_compatibility": true,
+        "output": "src/declarations"
+      },
+      "settings": {
+        "public_methods": [
+          "get_model_names",
+          "get_model_config",
+          "get_model_weights",
+          "store_model",
+          "delete_model"
+        ],
+        "methods": [
+          {
+            "name": "get_model_names",
+            "visibility": "public",
+            "query": true
+          },
+          {
+            "name": "get_model_config",
+            "visibility": "public",
+            "query": true
+          },
+          {
+            "name": "get_model_weights",
+            "visibility": "public",
+            "query": true
+          },
+          {
+            "name": "store_model",
+            "visibility": "public"
+          },
+          {
+            "name": "delete_model",
+            "visibility": "public"
+          }
+        ]
       }
     },
     "frontend": {
-      "dependencies": [
-        "model_storage"
-      ],
+      "dependencies": ["model_storage", "internet_identity"],
       "frontend": {
         "entrypoint": "out/index.html"
       },
-      "source": [
-        "out"
-      ],
+      "source": ["out"],
       "type": "assets"
     }
   },
-  "output_env_file": ".env.local",
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:4943"
+    }
+  },
   "version": 1
 }
